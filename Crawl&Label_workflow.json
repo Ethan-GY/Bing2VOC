@@ -47,19 +47,19 @@
             {
               "id": "9cac4e7b-bdff-4739-b145-b9d3680652ab",
               "name": "keyword",
-              "value": "变压器",
+              "value": "猫",
               "type": "string"
             },
             {
               "id": "8832f56d-0b41-40b1-a839-74569c216f87",
               "name": "filename",
-              "value": "crawl_test2",
+              "value": "test",
               "type": "string"
             },
             {
               "id": "6d38df81-611f-4f1b-81f2-30ff56f0ae3d",
               "name": "type",
-              "value": "=是变压器/不是变压器",
+              "value": "=是猫/不是猫",
               "type": "string"
             },
             {
