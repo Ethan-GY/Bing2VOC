@@ -1,0 +1,17 @@
+# 忽略所有生成的图像和标注文件
+*.jpg
+*.jpeg
+*.png
+*.xml
+*.zip
+*.JPG
+*.JPEG
+*.PNG
+
+# n8n 日志和缓存
+.n8n/
+node_modules/
+.env
+
+# 系统文件
+.DS_Store
