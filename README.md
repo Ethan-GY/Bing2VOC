@@ -1,10 +1,10 @@
-# 🖼️ Crawl & Label: 自动化Bing图像爬取 + VLM标注生成PASCAL VOC数据集
+# Crawl & Label: 自动化Bing图像爬取 + VLM标注生成PASCAL VOC数据集
 
 ![n8n Workflow](https://img.shields.io/badge/n8n-workflow-blue?style=for-the-badge&logo=n8n)
 ![VLM](https://img.shields.io/badge/VLM-GLM--4.1V--9B--Thinking-green?style=for-the-badge)
 ![PASCAL VOC](https://img.shields.io/badge/PASCAL%20VOC-XML--Labeling-orange?style=for-the-badge)
 
-> 一键自动从 Bing 搜索图片，调用大模型（如 GLM-4.1V）进行视觉语义理解，并输出标准 PASCAL VOC XML 标注文件，构建高质量目标检测训练数据集。
+> 一键自动从 Bing 搜索图片，调用大模型（如 GLM-4.1V）进行视觉语义理解，并输出标准 PASCAL VOC XML 标注文件，构建高质量目标检测训练数据集，极大节省标注劳动力。
 
 ---
 
@@ -17,7 +17,7 @@
 | 📁 **结构化输出** | 输出 `.jpg` 图像 + `.xml` 标注文件，完全符合 [PASCAL VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 标准格式 |
 | ⚙️ **全自动流程** | 无需人工干预，从关键词到数据集一键完成 |
 | 💾 **灵活配置** | 支持自定义路径、文件名、类别名称、最小尺寸、每页数量等参数 |
-| 🗂️ **打包归档** | 最终自动压缩为 `data.zip`，便于传输与训练 |
+| 🗂️ **本地保存** | 最终图片和xml标注文件保存到同一本地目录下，便于在LabelImg中打开，人工精标 |
 
 ---
 
@@ -40,18 +40,20 @@
 
 - 安装 [n8n](https://docs.n8n.io/getting-started/installation/)（推荐使用 Docker）：
   ```bash
-  docker run -it --rm \
-    --name n8n \
-    -p 5678:5678 \
-    -v ~/.n8n:/home/node/.n8n \
-    n8nio/n8n
+  #以mac为例
+	mkdir -p ~/Pictures/n8n_images
+	docker run -d --name n8n \
+	-p 5678:5678 \
+	-v n8n_data:/home/node/.n8n \ # 映射n8n数据目录
+	-v ~/Pictures/n8n_images:/home/node/images \ # 映射本地图片目录
+	docker.n8n.io/n8nio/n8n
   ```
 
 - 注册 [SiliconFlow](https://siliconflow.cn/) 并获取 **API Key**（免费额度可用）
 
 ### 2. 导入工作流
 
-1. 打开 n8n 工作流编辑器：[http://localhost:5678](http://localhost:5678)
+1. 打开 n8n 工作流编辑器：[http://localhost:5678](http://localhost:5678)并注册
 2. 点击右上角 **"Import from JSON"**
 3. 粘贴本项目中的 [`Crawl&Label_workflow.json`](Crawl&Label_workflow.json) 内容
 4. 点击 **"Import"**
@@ -60,32 +62,31 @@
 
 进入 **Credentials** → 新建 **HTTP Header Auth**：
 
-- **Name**: `Header Auth account 2` （必须与工作流中一致）
+- **Name**: `Header Auth account ` 
 - **Header Name**: `Authorization`
 - **Header Value**: `Bearer YOUR_SILICONFLOW_API_KEY`
 
-> ✅ **重要**：`Header Auth account 2` 名称**必须完全匹配**，否则 VLM 调用将失败！
 
-### 4. 配置存储路径（Linux/macOS 示例）
+### 4. 配置workflow参数
 
-在工作流顶部的 **"输入要求"** 节点中，修改路径为你本地可写目录：
+主要修改在工作流第二个节点 **"Input parameters"** 节点中：
 
 ```json
-"path": "/home/yourname/images",
-"filename": "my_dataset_001"
+"keyword": "<你的爬图关键词>",
+"filename": "图片保存的文件夹名称" #通过execute command节点mkdir实现，上级目录就是docker run里挂载的目录
+"type": "是<你的爬图关键词>/不是<你的爬图关键词>" #只是给VLM的分类选择，可以自由改进，见后文优化建议
+"num_img": "要爬取的图片总数量",
+"total_pages_to_scrape": "要爬取的总页数"#Bing懒加载每页最多返回35张图，总页数=要爬取的图片总数量/每页最多爬取的图片数量（35）
 ```
-
-> 💡 **Windows 用户**：请使用 `C:\\Users\\YourName\\images` 或挂载 Docker 卷。  
-> 💡 **Docker 用户**：建议挂载宿主机目录，例如：`-v ~/images:/home/node/images`
 
 ### 5. 运行工作流
 
 点击左上角 **“Execute Workflow”** 按钮，即可开始自动执行：
 
-- 自动创建文件夹 `/your/path/my_dataset_001/`
+- 自动创建文件夹 `/your/path/filename/`
 - 下载指定数量的 Bing 大图
 - 每张图调用 VLM 生成对应 XML 标注
-- 输出 ZIP 压缩包 `data.zip`
+- 打开filename文件查看所有爬下来的图片和xml标注
 
 ---
 
@@ -115,7 +116,7 @@
 ## 📂 输出结构示例
 
 ```
-/home/yourname/images/crawl_test2/
+/home/yourname/images/filename/
 ├── 0.jpg
 ├── 0.xml
 ├── 1.jpg
@@ -123,16 +124,15 @@
 ├── ...
 ├── 29.jpg
 ├── 29.xml
-└── data.zip ← 自动生成的完整数据集压缩包
 ```
 
 ### XML 标注样例（PASCAL VOC 标准）
-
+想修改的话在VLM labelling节点的body json里自由修改，默认是下面的样例
 ```xml
 <annotation>
-	<folder>crawl_test2</folder>
+	<folder>filename</folder>
 	<filename>0.jpg</filename>
-	<path>/home/yourname/images/crawl_test2/0.jpg</path>
+	<path>/home/yourname/images/filename/0.jpg</path>
 	<source>
 		<database>Unknown</database>
 	</source>
@@ -143,7 +143,7 @@
 	</size>
 	<segmented>0</segmented>
 	<object>
-		<name>是变压器</name>
+		<name>有异常：是裂缝</name>
 		<pose>Unspecified</pose>
 		<truncated>0</truncated>
 		<difficult>0</difficult>
@@ -165,12 +165,7 @@
 
 ### ✅ 提升标注准确率
 - 在 `type` 中增加描述词，如：`"红色变压器/其他设备"` → 指导模型关注颜色与形态
-- 在 prompt 中加入：“只标注清晰可见的物体，遮挡超过50%忽略”
-
-### ✅ 增强鲁棒性（可选）
-- 添加 `retryOnFail` 和超时设置（已配置）
-- 加入图像尺寸过滤（可扩展 `Filter1` 节点，检查 `width` 和 `height`）
-- 增加图像去重（基于 MD5 哈希）
+- 在 prompt 中加入：“只标注清晰可见的物体，遮挡超过50%忽略”等等，同样在VLMLabelling节点的body json里修改。
 
 ### ✅ 扩展方向
 | 方向 | 说明 |
@@ -183,15 +178,9 @@
 
 ---
 
-## 📜 许可证
-
-MIT License - See [LICENSE](LICENSE) for details.
-
----
-
 ## 🙏 致谢
 
 - [n8n](https://n8n.io/) —— 强大的开源自动化平台
 - [SiliconFlow](https://siliconflow.cn/) —— 提供高性能国产多模态模型
-- [GLM-4-Vision](https://github.com/THUDM/GLM-4-Vision) —— 优秀的开源视觉语言模型
+- [GLM-4-Vision](https://github.com/THUDM/GLM-4-Vision) —— 优秀的开源免费视觉语言模型
 - [PASCAL VOC](http://host.robots.ox.ac.uk/pascal/VOC/) —— 标注标准奠基者
