@@ -1,0 +1,781 @@
+{
+  "name": "Crawl&Label_workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "destinationKey": "base64",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        -176
+      ],
+      "id": "3351f3e8-7c4d-4025-a8e6-c382ff5343e5",
+      "name": "Convert to Base"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1264,
+        -32
+      ],
+      "id": "d6b178d0-9fea-4fd3-987d-82468e95e8d2",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "command": "=mkdir -p {{ $json.path }}/{{ $('Input parameters').item.json.filename }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        -176
+      ],
+      "id": "464cb44c-b8ea-474a-80d7-ac47e9db9de5",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9cac4e7b-bdff-4739-b145-b9d3680652ab",
+              "name": "keyword",
+              "value": "变压器",
+              "type": "string"
+            },
+            {
+              "id": "8832f56d-0b41-40b1-a839-74569c216f87",
+              "name": "filename",
+              "value": "crawl_test2",
+              "type": "string"
+            },
+            {
+              "id": "6d38df81-611f-4f1b-81f2-30ff56f0ae3d",
+              "name": "type",
+              "value": "=是变压器/不是变压器",
+              "type": "string"
+            },
+            {
+              "id": "14c8d5cc-57c5-490f-9bd6-1f983f63cb1b",
+              "name": "num_img",
+              "value": "30",
+              "type": "string"
+            },
+            {
+              "id": "abb49ddd-a096-46b2-bb19-7889a6408079",
+              "name": "path",
+              "value": "/home/node/images",
+              "type": "string"
+            },
+            {
+              "id": "32168206-e660-4c67-93c5-3997cfee7486",
+              "name": "min_width",
+              "value": "100",
+              "type": "string"
+            },
+            {
+              "id": "69672410-b89d-4297-b4ab-2d4a1cdf056d",
+              "name": "min_height",
+              "value": "100",
+              "type": "string"
+            },
+            {
+              "id": "4e2a83c3-5f7f-4a13-921f-6779d680ab3c",
+              "name": "images_per_page",
+              "value": "35",
+              "type": "string"
+            },
+            {
+              "id": "84fa93bc-8d4a-4a2a-92c2-71c7c96a3a37",
+              "name": "total_pages_to_scrape",
+              "value": "1",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1072,
+        -32
+      ],
+      "id": "621a43ba-74fb-477a-ac62-ac0ba1de60e9",
+      "name": "Input parameters"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 获取上一个节点定义的参数\nconst keyword = $input.first().json.keyword;\nconst imagesPerPage = Number($input.first().json.images_per_page);\nconst totalPages = Number($input.first().json.total_pages_to_scrape);\n\n// 创建一个空数组来存放我们的任务\nconst items = [];\n\n// 根据要爬取的总页数，生成循环任务\nfor (let i = 0; i < totalPages; i++) {\n  // Bing的翻页逻辑是通过 'first' 参数控制的\n  // 第1页: first=1\n  // 第2页: first=1 + 35 = 36\n  // 第3页: first=1 + 35*2 = 71\n  const firstValue = 1 + (i * imagesPerPage);\n\n  items.push({\n    json: {\n      keyword: keyword,\n      images_per_page: imagesPerPage,\n      // 为每一次循环计算出正确的 'first' 值\n      first: firstValue,\n      // 顺便记录一下这是第几页，方便调试\n      page_number: i + 1\n    }\n  });\n}\n\n// 返回这个包含多个任务的数组\n// 这个数组将作为下一个节点 (Loop) 的输入\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -704,
+        -32
+      ],
+      "id": "f668c84a-b0af-47a6-8d49-ac76b7afe8f7",
+      "name": "Code-Dynamic"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -496,
+        -32
+      ],
+      "id": "bb5cf393-94a3-43b0-af91-216d44479659",
+      "name": "Iteration1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        576,
+        -48
+      ],
+      "id": "059f3a77-da39-4378-8168-1c420376ef06",
+      "name": "Iteration2"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.bing.com/images/async?q={{ encodeURIComponent($json.keyword) }}&first={{ $json.first }}&count={{ $json.images_per_page }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "=Bulk Edit",
+              "value": "=q                {{ encodeURIComponent($json.keyword) }}\nfirst            {{ $json.first }}            // 分页起始序号\ncount            {{ $json.images_per_page }}  // 每页数量\nqft              +filterui:imagesize-large   // 仅大图，可选：medium, small\n                 "
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -272,
+        176
+      ],
+      "id": "69c913fb-65b2-49e3-aea6-16b8c46bf3c5",
+      "name": "Request-Bing"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "images",
+              "cssSelector": "a.iusc",
+              "returnValue": "attribute",
+              "attribute": "m",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -64,
+        176
+      ],
+      "id": "e0ee3ff7-e4c0-45bb-a44f-df4e9df6755d",
+      "name": "Extract html"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.first().json.images; // 获取上一步输出的JSON字符串数组\nconst urls = [];\n\nfor (const item of items) {\n  if (item) { // 确保不为空\n    try {\n      const parsed = JSON.parse(item);\n      if (parsed && parsed.murl) {\n        urls.push(parsed.murl); // 提取murl (media url)\n      }\n    } catch (e) {\n      // 忽略解析失败的项\n    }\n  }\n}\n\n// 返回一个只包含高清URL的干净数组\nreturn { images: urls };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        176
+      ],
+      "id": "5ddb4ec0-8bbb-4860-b7e1-f2b43926a5be",
+      "name": "Clean url"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 获取所有从循环中出来的项目\nconst allItems = $input.all();\n\n// 2. 使用 flatMap 提取并合并所有 images 数组，并用 filter(Boolean) 清理掉可能存在的空值\nconst allUrls = allItems.flatMap(item => item.json.images).filter(Boolean);\n\n// 3. 这是最关键的一步：返回一个全新的、只包含一个项目的数组。\n//    这个项目里有一个字段叫 'url', 它的值是我们刚刚整合好的、干净的URL数组。\nreturn [\n  {\n    json: {\n      url: allUrls\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        -48
+      ],
+      "id": "2181ffad-c411-460b-ad54-bd2932725934",
+      "name": "Extract url"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=url",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -48
+      ],
+      "id": "074d5844-1e33-4416-a232-e9657cb88c20",
+      "name": "Split url"
+    },
+    {
+      "parameters": {
+        "method": "HEAD",
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1136,
+        -32
+      ],
+      "id": "1172bafd-f578-4104-ae8d-5678ede23e65",
+      "name": "Check_url",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1678aab7-6e55-4849-9c2e-d6287094775d",
+              "leftValue": "={{ $json.statusCode === 200 }}",
+              "rightValue": "200",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1392,
+        48
+      ],
+      "id": "67821f52-43f6-4f41-8cf4-acba45c2d5b4",
+      "name": "If stable"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "df1635b2-a5b0-42d7-81a1-dc583988882a",
+              "name": "success_num",
+              "value": "={{$node[\"If stable\"].runIndex+2}}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1728,
+        112
+      ],
+      "id": "db603e14-6f74-4f37-b8d4-35a2d75b67dc",
+      "name": "Success_num"
+    },
+    {
+      "parameters": {
+        "url": "={{ $node[\"Iteration2\"].json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Referer",
+              "value": "https://www.bing.com/"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2144,
+        176
+      ],
+      "id": "76bf5837-392e-4c4e-b9c4-551e4929989c",
+      "name": "Get url",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "36ebb9d3-1264-49a1-95fe-226336e0e37a",
+              "leftValue": "={{ Object.keys($binary || {}).length > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        -176
+      ],
+      "id": "f09446b9-01f5-47bd-989d-2775db5e625a",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "maxItems": "={{ $('Input parameters').first().json.num_img }}"
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        -176
+      ],
+      "id": "a2c8cefb-c81d-42f6-b347-cf94353c882a",
+      "name": "Num_Limit"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Input parameters').first().json.path }}/{{ $('Input parameters').first().json.filename }}/{{ $itemIndex }}.jpg",
+        "dataPropertyName": "=data",
+        "options": {
+          "append": false
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        -176
+      ],
+      "id": "fb66fbe4-5af8-4df7-bc21-bead70be30b7",
+      "name": "Save photos"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.siliconflow.cn/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"THUDM/GLM-4.1V-9B-Thinking\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"您是一位精确数据标注专家。您的主要任务是分析一张图片，并为它生成一个完整、有效的PASCAL VOC XML标注。您的整个回复必须仅包含原始XML内容。一定不要包含任何解释或引入性文字。必须严格遵循PASCAL VOC格式。object的name属性必须是{{ $('Input parameters').first().json.type }}中的一个。一张图片里每检测到一个目标，就单独生成一个完整的<object>...<object>块，每个块里只能写一组边界框坐标。边界框坐标xmin, ymin, xmax, ymax必须是整数，代表围绕检测到的物体的最紧密的框。必须严格按照以下格式输出:\\n<annotation>\\n\\t<folder>{{ $('Input parameters').first().json.filename }}</folder>\\n\\t<filename>{{ $itemIndex }}.jpg</filename>\\n\\t<path>{{ $('Save photos').item.json.fileName }}</path>\\n\\t<source>\\n\\t\\t<database>Unknown</database>\\n\\t</source>\\n\\t<size>\\n\\t\\t<width></width>\\n\\t\\t<height></height>\\n\\t\\t<depth></depth>\\n\\t</size>\\n\\t<segmented>0</segmented>\\n\\t<object>\\n\\t\\t<name></name>\\n\\t\\t<pose>Unspecified</pose>\\n\\t\\t<truncated>0</truncated>\\n\\t\\t<difficult>0</difficult>\\n\\t\\t<bndbox>\\n\\t\\t\\t<xmin></xmin>\\n\\t\\t\\t<ymin></ymin>\\n\\t\\t\\t<xmax></xmax>\\n\\t\\t\\t<ymax></ymax>\\n\\t\\t</bndbox>\\n\\t</object>\\n</annotation>\"\n        },\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"data:image/webp;base64,{{ $json.base64 }}\"\n          }\n        }\n      ]\n    }\n  ],\n  \"max_tokens\": 512\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2080,
+        -176
+      ],
+      "id": "1a0cfbd4-6c13-4bb8-b8b6-369945721aa5",
+      "name": "VLM_labelling",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "sQd8pnEulcYS330o",
+          "name": "Header Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "78f807c3-09ce-4e5d-9f5d-6801d799f0a6",
+              "name": "xml_content",
+              "value": "={{ $json.choices[0].message.content.match(/<annotation>[\\s\\S]*<\\/annotation>/)[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2288,
+        -176
+      ],
+      "id": "aae14451-34cb-4008-b907-8049e0ffab69",
+      "name": "Extract xml"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "=xml_content",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2512,
+        -176
+      ],
+      "id": "3af7f8e8-6ac8-4802-a857-e17f8ac09c55",
+      "name": "Convert xml to binary"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Input parameters').first().json.path }}/{{ $('Input parameters').first().json.filename }}/{{ $itemIndex }}.xml",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2720,
+        -176
+      ],
+      "id": "4610dec9-b0fa-4375-9f17-49b603e2e1ae",
+      "name": "Save xml"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Convert to Base": {
+      "main": [
+        [
+          {
+            "node": "VLM_labelling",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Input parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input parameters": {
+      "main": [
+        [
+          {
+            "node": "Code-Dynamic",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code-Dynamic": {
+      "main": [
+        [
+          {
+            "node": "Iteration1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Iteration1": {
+      "main": [
+        [
+          {
+            "node": "Extract url",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Request-Bing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Iteration2": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check_url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request-Bing": {
+      "main": [
+        [
+          {
+            "node": "Extract html",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract html": {
+      "main": [
+        [
+          {
+            "node": "Clean url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean url": {
+      "main": [
+        [
+          {
+            "node": "Iteration1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract url": {
+      "main": [
+        [
+          {
+            "node": "Split url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split url": {
+      "main": [
+        [
+          {
+            "node": "Iteration2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check_url": {
+      "main": [
+        [
+          {
+            "node": "If stable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If stable": {
+      "main": [
+        [
+          {
+            "node": "Success_num",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Iteration2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success_num": {
+      "main": [
+        [
+          {
+            "node": "Get url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get url": {
+      "main": [
+        [
+          {
+            "node": "Iteration2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Num_Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Num_Limit": {
+      "main": [
+        [
+          {
+            "node": "Save photos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save photos": {
+      "main": [
+        [
+          {
+            "node": "Convert to Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VLM_labelling": {
+      "main": [
+        [
+          {
+            "node": "Extract xml",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract xml": {
+      "main": [
+        [
+          {
+            "node": "Convert xml to binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert xml to binary": {
+      "main": [
+        [
+          {
+            "node": "Save xml",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fe30ca50-ba27-4810-849c-fa40a9460fb1",
+  "meta": {
+    "instanceId": "c54575827153544ae01143261e0101e5d20fad280156244d8652906d4a6a9227"
+  },
+  "id": "U8UKGdjdthYDqFC0",
+  "tags": []
+}
