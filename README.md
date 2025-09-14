@@ -40,12 +40,12 @@
 
 - 安装 [n8n](https://docs.n8n.io/getting-started/installation/)（推荐使用 Docker）：
   ```bash
-  #以mac为例
+  	#以mac为例
 	mkdir -p ~/Pictures/n8n_images
 	docker run -d --name n8n \
 	-p 5678:5678 \
 	-v n8n_data:/home/node/.n8n \ # 映射n8n数据目录
-	-v ~/Pictures/n8n_images:/home/node/images \ # 映射本地图片目录
+	-v ~/Pictures/n8n_images:/home/node/images \ # 映射本地图片目录,win用户需要把“：”前的部分修改为图片标注文件下载到本地的目标路径
 	docker.n8n.io/n8nio/n8n
   ```
 
@@ -70,6 +70,7 @@
 ### 4. 配置workflow参数
 
 主要修改在工作流第二个节点 **"Input parameters"** 节点中：
+
 
 ```json
 "keyword": "<你的爬图关键词>",
